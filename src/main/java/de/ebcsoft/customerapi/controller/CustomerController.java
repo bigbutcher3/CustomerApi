@@ -1,44 +1,56 @@
 package de.ebcsoft.customerapi.controller;
 
-import de.ebcsoft.customerapi.entity.Customer;
-import de.ebcsoft.customerapi.repository.CustomerRepositoy;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
+import de.ebcsoft.customerapi.dto.CustomerDto;
+import de.ebcsoft.customerapi.entity.CustomerEntity;
+import de.ebcsoft.customerapi.repository.CustomerRepository;
+import de.ebcsoft.customerapi.services.CustomerService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/customer")
 public class CustomerController {
 
-    @Autowired
-    CustomerRepositoy customerRepositoy;
+    private final CustomerService customerService;
 
-    public CustomerController(CustomerRepositoy customerRepositoy) {
-        this.customerRepositoy = customerRepositoy;
+    CustomerRepository customerRepository;
+
+    public CustomerController(CustomerService customerService, CustomerRepository customerRepository) {
+        this.customerService = customerService;
+        this.customerRepository = customerRepository;
     }
 
     @GetMapping("")
-    public List<Customer> index() {
-        return customerRepositoy.findAll();
+    @Operation(description = "shows all customers from DB in JSON format", method = "index", summary = "gets all customers")
+    public List<CustomerDto> index() {
+        return customerService.getAll();
     }
 
-    @PostMapping("")
-    public void createCustomer(@RequestBody Customer customer){
-        customerRepositoy.save(customer);
+    @GetMapping("/one/{id}")
+    @Operation(description = "shows that one customer with the specific id", method = "getCustomer", summary = "gets one customer")
+    public CustomerDto getCustomer(@PathVariable("id") @Parameter(name = "id", description = "Customer ID", example = "1") Long id) {
+        return customerService.getCustomer(id);
     }
 
-    @DeleteMapping("")
-    public void deleteCustomer(@PathVariable Long customerId) {
-        Optional<Customer> customer = customerRepositoy.findById(customerId);
-        if(customer.isPresent()) {
-            return;
-        }
+    @PostMapping
+    @Operation(description = "creates a new customer in DB from JSON", summary = "creates new customer", method = "createCustomer")
+    public String createCustomer(@RequestBody @Parameter(example = "{\"firstName\": \"name1\", \"lastName\": \"name2\", \"city\": \"city\", \"birthdayDay\": \"1990-01-01\", \"secret\": \"secret\"") CustomerEntity customerEntity) {
+        return customerService.createCustomer(customerEntity);
+    }
 
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer with this id not found");
+    @PutMapping
+    @Operation(description = "updates a specific customer", method = "updateCustomer", summary = "updates a customer")
+    public String updateCustomer(@RequestBody @Parameter(example = "{\"id\": 1, \"firstName\": \"name1\", \"lastName\": \"name2\", \"city\": \"city\", \"birthdayDay\": \"1990-01-01\", \"secret\": \"secret\"") CustomerEntity customerEntity) {
+        return customerService.updateCustomer(customerEntity);
+    }
+
+    @DeleteMapping("/delete/{id}")
+    @Operation(description = "deletes a specific customer", summary = "deletes a customer", method = "deleteCustomer")
+    public String deleteCustomer(@PathVariable /*@Parameter(name = "Customer ID", example = "1", required = true) */Long id) {
+        return customerService.deleteCustomer(id);
     }
 
 }
